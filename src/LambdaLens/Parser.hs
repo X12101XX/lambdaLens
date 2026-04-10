@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-} -- 使字符串字面量的默认类型从String变为Text
+-- 使字符串字面量的默认类型从String变为Text
+{-# LANGUAGE OverloadedStrings #-}
 
 module LambdaLens.Parser where
 
@@ -10,6 +11,7 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
 
+-- 此类型接受一个类型参数Result，表示解析成功时的返回类型
 type Parser = Parsec Void Text
 
 integer :: Parser Int
@@ -54,17 +56,81 @@ pBool = (EBool True <$ symbol "true") <|> (EBool False <$ symbol "false")
 pVar :: Parser Expr
 pVar = EVar . unpack <$> identifier
 
--- pParens :: Parser Expr
--- pParens = do 
---     _ <- symbol "("
---     e <- pExpr    -- [TODO] 还未定义 pExpr
---     _ <- symbol ")"
---     return e
+pParens :: Parser Expr
+pParens = do
+  _ <- symbol "("
+  e <- pExpr -- [TODO] 还未定义 pExpr
+  _ <- symbol ")"
+  return e
 
 pAtom :: Parser Expr
-pAtom = choice
-    [ pInt
-    , pBool
-    , pVar
-    -- , pParens [TODO] 由于 pExp 还未实现，所以暂时还无法实现 pParens
+pAtom =
+  choice
+    [ pInt,
+      pBool,
+      pVar,
+      pParens
     ]
+
+-- 所有运算符的表，按照优先级从高到低排列
+operatorTable :: [[Operator Parser Expr]]
+operatorTable =
+  [ [ binary "*" Mul,
+      binary "/" Div
+    ],
+    [ binary "+" Add,
+      binary "-" Sub
+    ],
+    [ binary "==" Eq,
+      binary "<" Lt,
+      binary ">" Gt
+    ]
+  ]
+
+-- 中缀左结合运算符
+binary :: Text -> Op -> Operator Parser Expr
+binary name op = InfixL (EBinOp op <$ symbol name)
+
+-- 解析表达式
+pExpr :: Parser Expr
+pExpr =
+  choice
+    [ -- 对于 let, if, lambda 这些表达式
+      -- 我们可以确定他们不会引发歧义，所以不需要使用try
+      pLet,
+      pIf,
+      pLambda,
+      makeExprParser pAtom operatorTable
+    ]
+
+-- 解析 let 表达式
+pLet :: Parser Expr
+pLet = do
+  _ <- symbol "let"
+  varName <- identifier
+  _ <- symbol "="
+  varExpr <- pExpr
+  _ <- symbol "in"
+  ELet (unpack varName) varExpr <$> pExpr
+
+-- 解析 if 表达式
+pIf :: Parser Expr
+pIf = do
+  _ <- symbol "if"
+  cond <- pExpr
+  _ <- symbol "then"
+  thenBranch <- pExpr
+  _ <- symbol "else"
+  EIf cond thenBranch <$> pExpr
+
+-- 解析 lambda 表达式
+pLambda :: Parser Expr
+pLambda = do
+  _ <- symbol "\\"
+  x <- identifier
+  _ <- symbol "->"
+  ELam (unpack x) <$> pExpr
+
+-- 从终端接收文本，解析文本成AST，如果解析失败，返回错误信息
+parseExpr :: Text -> Either (ParseErrorBundle Text Void) Expr
+parseExpr = parse (sc *> pExpr <* eof) "<stdin>" 
