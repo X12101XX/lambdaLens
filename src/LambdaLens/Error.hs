@@ -1,0 +1,2 @@
+module LambdaLens.Error where
+

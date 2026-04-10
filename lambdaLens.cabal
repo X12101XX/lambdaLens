@@ -1,0 +1,56 @@
+cabal-version:      3.0
+name:               lambdaLens
+version:            0.1.0.0
+synopsis:           Visual functional language interpreter with HM type inference
+license:            MIT
+license-file:       LICENSE
+author:             X12101X
+maintainer:         X12101XX@outlook.com
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+
+common shared
+    default-language: GHC2021
+    ghc-options:      -Wall
+    default-extensions:
+        OverloadedStrings
+        LambdaCase
+        DerivingStrategies
+        GeneralizedNewtypeDeriving
+
+library
+    import:           shared
+    hs-source-dirs:   src
+    exposed-modules:
+        LambdaLens.Syntax
+        LambdaLens.Parser
+        LambdaLens.TypeInfer
+        LambdaLens.Eval
+        LambdaLens.Visualize
+        LambdaLens.Error
+    build-depends:
+        base                >= 4.17 && < 5,
+        megaparsec          >= 9.0,
+        parser-combinators  >= 1.3,
+        text                >= 2.0,
+        containers          >= 0.6,
+        mtl                 >= 2.3
+
+executable lambdaLens
+    import:           shared
+    hs-source-dirs:   app
+    main-is:          Main.hs
+    build-depends:
+        base,
+        lambdaLens,
+        text
+
+test-suite lambdaLens-test
+    import:           shared
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          Spec.hs
+    build-depends:
+        base,
+        lambdaLens,
+        hspec           >= 2.0
