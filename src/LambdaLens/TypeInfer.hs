@@ -8,6 +8,29 @@ import Data.Set (Set)
 import Data.Set qualified as Set
 import LambdaLens.Syntax
 
+--                    ┌─────────────┐
+--    Expr ───────────▶   infer()   │
+--    TypeEnv ────────▶             │
+--                    │  ┌────────┐ │
+--                    │  │ fresh  │ │  ← State Int 提供唯一变量
+--                    │  └────────┘ │
+--                    │  ┌────────┐ │
+--                    │  │ unify  │ │  ← 产生 Subst
+--                    │  └────────┘ │
+--                    │  ┌────────────────┐
+--                    │  │ instantiate    │ ← 打开 ∀（使用多态变量时）
+--                    │  │ generalize     │ ← 封装 ∀（let 绑定时）
+--                    │  └────────────────┘
+--                    └──────┬──────┘
+--                           │
+--                    (Subst, Type)
+--                           │
+--                    ┌──────▼──────┐
+--                    │  apply s t  │  ← 把积累的替换应用到最终类型
+--                    └──────┬──────┘
+--                           │
+--                       最终 Type
+
 -- 类型的传播机制
 class Substitutable a where
   apply :: Subst -> a -> a -- 应用替换，把类型变量替换成具体的类型
@@ -207,28 +230,7 @@ infer env (EBinOp op l r) = do
 -- 例如，对于 Add, Sub, Mul, Div，我们需要约束左右操作数都是 Int，结果也是 Int
 -- 而对于 Eq, Lt, Gt，我们需要约束左右操作数都是 Int，结果是 Bool
 -- 但是，为了简化代码，我们在这里统一约束左右操作数都是 Int，结果的类型根据运算符来决定
---                    ┌─────────────┐
---    Expr ───────────▶   infer()   │
---    TypeEnv ────────▶             │
---                    │  ┌────────┐ │
---                    │  │ fresh  │ │  ← State Int 提供唯一变量
---                    │  └────────┘ │
---                    │  ┌────────┐ │
---                    │  │ unify  │ │  ← 产生 Subst
---                    │  └────────┘ │
---                    │  ┌────────────────┐
---                    │  │ instantiate    │ ← 打开 ∀（使用多态变量时）
---                    │  │ generalize     │ ← 封装 ∀（let 绑定时）
---                    │  └────────────────┘
---                    └──────┬──────┘
---                           │
---                    (Subst, Type)
---                           │
---                    ┌──────▼──────┐
---                    │  apply s t  │  ← 把积累的替换应用到最终类型
---                    └──────┬──────┘
---                           │
---                       最终 Type
+
 
 
 liftUnify :: Type -> Type -> Infer Subst
