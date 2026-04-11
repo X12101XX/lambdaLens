@@ -226,12 +226,11 @@ infer env (EBinOp op l r) = do
         Gt -> TBool
         _ -> TInt -- Add, Sub, Mul, Div
   return (s, resultType)
+
 -- 这里是已经经过简化的版本，实际上对于不同的二元运算符，我们需要有不同的约束
 -- 例如，对于 Add, Sub, Mul, Div，我们需要约束左右操作数都是 Int，结果也是 Int
 -- 而对于 Eq, Lt, Gt，我们需要约束左右操作数都是 Int，结果是 Bool
 -- 但是，为了简化代码，我们在这里统一约束左右操作数都是 Int，结果的类型根据运算符来决定
-
-
 
 liftUnify :: Type -> Type -> Infer Subst
 liftUnify t1 t2 = case unify t1 t2 of
