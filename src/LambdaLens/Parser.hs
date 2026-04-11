@@ -39,7 +39,7 @@ identifier = lexeme $ try $ do
       first <- letterChar -- parse 一个 char，保证了变量的第一个字符一定是字母
       rest <- many $ alphaNumChar <|> char '_' -- parse 0 个或多个 char 或 '_'
       return $ cons first $ pack rest
-    keywords = ["let", "in", "if", "then", "else", "true", "false"]
+    keywords = ["let", "in", "if", "then", "else", "true", "false", "letrec"]
 
 -- 对 Atom 的 parsers
 -- 我们要解析的Atom
@@ -104,6 +104,8 @@ pExpr =
   choice
     [ -- 对于 let, if, lambda 这些表达式
       -- 我们可以确定他们不会引发歧义，所以不需要使用try
+      -- 而对于 try letrec 而言，它是有可能引发歧义的
+      try pLetRec,
       pLet,
       pIf,
       pLambda,
@@ -119,6 +121,16 @@ pLet = do
   varExpr <- pExpr
   _ <- symbol "in"
   ELet (unpack varName) varExpr <$> pExpr
+
+-- 解析 letrec 表达式
+pLetRec :: Parser Expr
+pLetRec = do
+  _ <- symbol "letrec"
+  varName <- identifier
+  _ <- symbol "="
+  varExpr <- pExpr
+  _ <- symbol "in"
+  ELetRec (unpack varName) varExpr <$> pExpr
 
 -- 解析 if 表达式
 pIf :: Parser Expr

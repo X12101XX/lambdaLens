@@ -39,6 +39,13 @@ eval (EBinOp op e1 e2) = do
 eval (ELet x e1 e2) = do
   v1 <- eval e1
   local ((x, v1) :) (eval e2)
+eval (ELetRec x val body) = do
+  env <- ask
+  let env' = (x, v) : env
+      v = case runReaderT (eval val) env' of
+            Right result -> result
+            Left err     -> error err
+  local (const env') (eval body)
 eval (EIf cond eThen eElse) = do
   vCond <- eval cond
   case vCond of

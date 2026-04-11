@@ -11,6 +11,7 @@ data Expr
   | ELam String Expr
   | EApp Expr Expr
   | ELet String Expr Expr
+  | ELetRec String Expr Expr 
   | EIf Expr Expr Expr
   | EBinOp Op Expr Expr
   deriving (Show, Eq)

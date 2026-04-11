@@ -199,6 +199,25 @@ infer env (ELet x val body) = do
 -- 最后，在新的环境中推导 body 的类型，得到一个类型 t2 和一个替换表 s2
 -- let 表达式的类型就是 body 的类型
 -- 值得注意的是 x 在此刻仍然是多态的，x 的具体类型只有在 body 中 被使用的时候才会被确定
+infer env (ELetRec x val body) = do
+  tv <- fresh
+  let env' = Map.insert x (Forall [] tv) env
+  (s1, t1) <- infer env' val
+  s2 <- liftUnify (apply s1 tv) t1
+  let s = composeSubst s2 s1
+      env'' = apply s env'
+      scheme = generalize env'' (apply s t1)
+      env''' = Map.insert x scheme env''
+  (s3, t3) <- infer env''' body
+  return (composeSubst s3 s, t3)
+-- letrec 的 x 是递归的，所以在推导 val 的时候，x 就已经存在于环境中了
+-- 因此，我们需要先为 x 生成一个类型变量 tv，并把它放入环境中，这样在推导 val 的时候，就可以看到 x 了
+-- 然后，推导 val 的类型，得到一个类型 t1 和一个替换表  s1
+-- 接着，我们需要 unify x 的类型 tv 和 val 的类型 t1，得到一个替换表 s2
+-- 这样，x 的类型就被确定了，我们把 s2 应用到环境中，得到一个新的环境 env''
+-- 然后，把 t1 泛化成一个 Scheme，插入到新的环境中，得到 env'''
+-- 最后，在 新的环境中推导 body 的类型，得到一个类型 t3 和一个替换表 s3
+-- letrec 表达式的类型就是 body 的类型
 infer env (EIf cond then_ else_) = do
   (s1, t1) <- infer env cond
   (s2, t2) <- infer (apply s1 env) then_
