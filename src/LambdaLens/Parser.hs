@@ -59,7 +59,7 @@ pVar = EVar . unpack <$> identifier
 pParens :: Parser Expr
 pParens = do
   _ <- symbol "("
-  e <- pExpr -- [TODO] 还未定义 pExpr
+  e <- pExpr
   _ <- symbol ")"
   return e
 
@@ -71,6 +71,13 @@ pAtom =
       pVar,
       pParens
     ]
+
+-- 函数应用
+pApp :: Parser Expr
+pApp = do
+  func <- pAtom  -- 函数名是一个Atom
+  args <- many pAtom        -- 后面跟 0 个或多个参数
+  return $ foldl EApp func args
 
 -- 所有运算符的表，按照优先级从高到低排列
 operatorTable :: [[Operator Parser Expr]]
@@ -100,7 +107,7 @@ pExpr =
       pLet,
       pIf,
       pLambda,
-      makeExprParser pAtom operatorTable
+      makeExprParser pApp operatorTable
     ]
 
 -- 解析 let 表达式
