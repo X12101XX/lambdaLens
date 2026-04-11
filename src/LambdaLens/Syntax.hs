@@ -26,20 +26,9 @@ data Op
   | Gt
   deriving (Show, Eq)
 
--- 类型
-data Type
-  = TInt
-  | TBool
-  | TVar Name
-  | TFun Type Type
-  deriving (Show, Eq, Ord)       
-
--- 多态类型
-data Scheme = Forall [Name] Type
-    deriving stock (Show, Eq)
-
 data Value
   = VInt Int
   | VBool Bool
   | VClosure String Expr Env
   deriving (Show, Eq)
+
