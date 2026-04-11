@@ -1,6 +1,7 @@
 module LambdaLens.Syntax where
 
 type Name = String
+type Env = [(String, Value)]
 
 -- 抽象语法树
 data Expr
@@ -36,3 +37,9 @@ data Type
 -- 多态类型
 data Scheme = Forall [Name] Type
     deriving stock (Show, Eq)
+
+data Value
+  = VInt Int
+  | VBool Bool
+  | VClosure String Expr Env
+  deriving (Show, Eq)
