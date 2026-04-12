@@ -28,18 +28,24 @@ library
         LambdaLens.Eval
         LambdaLens.Visualize
         LambdaLens.Error
+        LambdaLens.Stepper
+        LambdaLens.Api
     build-depends:
         base                >= 4.17 && < 5,
         megaparsec          >= 9.0,
         parser-combinators  >= 1.3,
         text                >= 2.0,
         containers          >= 0.6,
-        mtl                 >= 2.3
+        mtl                 >= 2.3,
+         aeson               >= 2.0,
+        scotty              >= 0.20,
+        http-types           >= 0.12
 
 executable lambdaLens
     import:           shared
     hs-source-dirs:   app
     main-is:          Main.hs
+    ghc-options:      -threaded
     build-depends:
         base,
         lambdaLens,
