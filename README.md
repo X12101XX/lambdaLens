@@ -23,7 +23,7 @@ src/LambdaLens/
 在启动服务器后，提供了以下接口：
 - `POST /api/trace`
 - `POST /api/eval`
-- `POST /api/typeinfer`
+- `POST /api/typecheck`
 
 ### 实例
 
@@ -55,7 +55,7 @@ src/LambdaLens/
 
 ##### 响应
 ```json
-{ "type": "Int → Int" }
+{ "type": "Int" }
 ```
 #### `POST /api/eval` — 求值
 
