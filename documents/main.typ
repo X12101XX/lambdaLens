@@ -6,7 +6,7 @@
   doc-category: "软件应用与开发类 · 技术文档",
   doc-title: "LambdaLens: 可视化函数式语言解释器与 HM 类型推导系统",
   author: "XXX大学 · XXX团队",
-  affiliation: "信息科学与数据工程学院",
+  affiliation: "数据科学与信息工程学院",
   language: "zh",
   compact-mode: true,
   it,
