@@ -142,7 +142,7 @@ prettyExpr (EVar x) = x
 prettyExpr (ELam x body) = "(\\" ++ x ++ " -> " ++ prettyExpr body ++ ")"
 prettyExpr (EApp f arg) = prettyFunc f ++ " " ++ prettyArg arg
   where
-    prettyFunc e@(ELam {}) = "(" ++ prettyExpr e ++ ")"
+    prettyFunc e@(ELam {}) = prettyExpr e
     prettyFunc e@(ELet {}) = "(" ++ prettyExpr e ++ ")"
     prettyFunc e@(ELetRec {}) = "(" ++ prettyExpr e ++ ")"
     prettyFunc e@(EIf {}) = "(" ++ prettyExpr e ++ ")"
@@ -159,7 +159,7 @@ prettyExpr (EBinOp op e1 e2) =
   where
     wrapBinOp e@(EBinOp {}) = "(" ++ prettyExpr e ++ ")"
     wrapBinOp e@(EIf {}) = "(" ++ prettyExpr e ++ ")"
-    wrapBinOp e@(ELam {}) = "(" ++ prettyExpr e ++ ")"
+    wrapBinOp e@(ELam {}) = prettyExpr e
     wrapBinOp e = prettyExpr e
 prettyExpr (EIf c t e) =
   "if " ++ prettyExpr c ++ " then " ++ prettyExpr t ++ " else " ++ prettyExpr e
