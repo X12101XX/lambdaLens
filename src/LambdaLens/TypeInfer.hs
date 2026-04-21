@@ -8,29 +8,6 @@ import Data.Set (Set)
 import Data.Set qualified as Set
 import LambdaLens.Syntax
 
---                    ┌─────────────┐
---    Expr ───────────▶   infer()   │
---    TypeEnv ────────▶             │
---                    │  ┌────────┐ │
---                    │  │ fresh  │ │  ← State Int 提供唯一变量
---                    │  └────────┘ │
---                    │  ┌────────┐ │
---                    │  │ unify  │ │  ← 产生 Subst
---                    │  └────────┘ │
---                    │  ┌────────────────┐
---                    │  │ instantiate    │ ← 打开 ∀（使用多态变量时）
---                    │  │ generalize     │ ← 封装 ∀（let 绑定时）
---                    │  └────────────────┘
---                    └──────┬──────┘
---                           │
---                    (Subst, Type)
---                           │
---                    ┌──────▼──────┐
---                    │  apply s t  │  ← 把积累的替换应用到最终类型
---                    └──────┬──────┘
---                           │
---                       最终 Type
-
 -- 类型的传播机制
 class Substitutable a where
   apply :: Subst -> a -> a -- 应用替换，把类型变量替换成具体的类型
