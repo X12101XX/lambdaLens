@@ -1,8 +1,42 @@
 import { useState, useEffect } from 'react';
 
-const API_BASE = 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
 
-const PRESET_RULES = [
+type Rule = {
+  name: string;
+  expr: string;
+  display: string;
+  preset: boolean;
+};
+
+type TraceStep = {
+  index: number;
+  exprs: string;
+  type?: string;
+  rule?: string | null;
+};
+
+type TraceResult = {
+  steps: TraceStep[];
+  type?: string | null;
+};
+
+type EvalResult = {
+  value: string;
+  type?: string;
+};
+
+type TypeResult = {
+  type: string;
+};
+
+type LoadingState = {
+  trace: boolean;
+  eval: boolean;
+  type: boolean;
+};
+
+const PRESET_RULES: Rule[] = [
   { name: 'T', expr: '\\x y -> x', display: 'T = λx.λy.x', preset: true },
   { name: 'F', expr: '\\x y -> y', display: 'F = λx.λy.y', preset: true },
   { name: 'AND', expr: '\\p q -> p q p', display: '∧ = λp.λq.p q p', preset: true },
@@ -17,16 +51,16 @@ const PRESET_RULES = [
 
 function App() {
   const [expr, setExpr] = useState('(\\x -> x + 1) 3');
-  const [traceResult, setTraceResult] = useState(null);
-  const [evalResult, setEvalResult] = useState(null);
-  const [typeResult, setTypeResult] = useState(null);
-  const [selectedStep, setSelectedStep] = useState(null);
-  const [loading, setLoading] = useState({ trace: false, eval: false, type: false });
+  const [traceResult, setTraceResult] = useState<TraceResult | null>(null);
+  const [evalResult, setEvalResult] = useState<EvalResult | null>(null);
+  const [typeResult, setTypeResult] = useState<TypeResult | null>(null);
+  const [selectedStep, setSelectedStep] = useState<TraceStep | null>(null);
+  const [loading, setLoading] = useState<LoadingState>({ trace: false, eval: false, type: false });
   const [error, setError] = useState('');
   
-  const [rules, setRules] = useState(() => {
+  const [rules, setRules] = useState<Rule[]>(() => {
     const saved = localStorage.getItem('lambdaLens_customRules');
-    const custom = saved ? JSON.parse(saved) : [];
+    const custom: Rule[] = saved ? JSON.parse(saved) : [];
     return [...PRESET_RULES, ...custom];
   });
   const [newRuleName, setNewRuleName] = useState('');
@@ -38,11 +72,11 @@ function App() {
     localStorage.setItem('lambdaLens_customRules', JSON.stringify(customRules));
   }, [rules]);
 
-  const escapeRegExp = (str) => {
+  const escapeRegExp = (str: string): string => {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   };
 
-  const expandRules = (input) => {
+  const expandRules = (input: string): string => {
     let result = input;
     const sortedRules = [...rules].sort((a, b) => b.name.length - a.name.length);
     for (const rule of sortedRules) {
@@ -52,18 +86,18 @@ function App() {
     return result;
   };
 
-  const toBackend = (str) => {
+  const toBackend = (str: string): string => {
     if (!str) return '';
     return str.replace(/λ/g, '\\');
   };
 
-  const formatArrow = (str) => {
+  const formatArrow = (str: string): string => {
     if (!str) return '';
     return str.replace(/->/g, '→');
   };
 
   // 演示数据（当后端不可用或返回空时）
-  const getDemoSteps = (inputExpr) => [
+  const getDemoSteps = (inputExpr: string): TraceStep[] => [
     { index: 0, exprs: inputExpr, type: 'Int', rule: null },
     { index: 1, exprs: '3 + 1', type: 'Int', rule: 'β-reduction' },
     { index: 2, exprs: '4', type: 'Int', rule: 'δ-reduction' }
@@ -84,10 +118,28 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ expr: toBackend(expanded) }),
       });
-      const data = await res.json();
-      if (res.ok && data.steps && data.steps.length > 0 && data.steps[0].exprs) {
-        setTraceResult(data);
-        setSelectedStep(data.steps[0]);
+      const data = (await res.json()) as {
+        steps?: Array<{
+          index?: number;
+          exprs?: string;
+          expr?: string;
+          type?: string;
+          rule?: string | null;
+        }>;
+        type?: string | null;
+      };
+      const normalizedSteps = Array.isArray(data.steps)
+        ? data.steps.map((step, index): TraceStep => ({
+            index: step.index ?? index,
+            exprs: step.exprs ?? step.expr ?? '',
+            type: step.type,
+            rule: step.rule,
+          }))
+        : [];
+
+      if (res.ok && normalizedSteps.length > 0 && normalizedSteps[0].exprs) {
+        setTraceResult({ ...data, steps: normalizedSteps });
+        setSelectedStep(normalizedSteps[0]);
       } else {
         const demoSteps = getDemoSteps(expr);
         setTraceResult({ steps: demoSteps, type: 'Int' });
@@ -113,9 +165,12 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ expr: toBackend(expanded) }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { value?: unknown; type?: unknown };
       if (res.ok && data.value !== undefined) {
-        setEvalResult(data);
+        setEvalResult({
+          value: String(data.value),
+          type: typeof data.type === 'string' ? data.type : undefined,
+        });
       } else {
         setEvalResult({ value: '4', type: 'Int' });
         setError('后端返回错误，使用演示数据');
@@ -137,9 +192,9 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ expr: toBackend(expanded) }),
       });
-      const data = await res.json();
-      if (res.ok && data.type) {
-        setTypeResult(data);
+      const data = (await res.json()) as { type?: unknown };
+      if (res.ok && typeof data.type === 'string') {
+        setTypeResult({ type: data.type });
       } else {
         setTypeResult({ type: 'Int → Int' });
         setError('后端返回错误，使用演示数据');
@@ -151,7 +206,7 @@ function App() {
     setLoading(prev => ({ ...prev, type: false }));
   };
 
-  const insertRule = (ruleExpr) => {
+  const insertRule = (ruleExpr: string): void => {
     setExpr(ruleExpr);
     setTraceResult(null);
     setEvalResult(null);
@@ -175,7 +230,7 @@ function App() {
     }
   };
 
-  const deleteCustomRule = (index) => {
+  const deleteCustomRule = (index: number): void => {
     const newRules = [...rules];
     const rule = newRules[index];
     if (rule.preset) return;
@@ -186,7 +241,7 @@ function App() {
   return (
     <div style={{ 
       display: 'flex', 
-      width: '100vw', 
+      width: '100%', 
       minHeight: '100vh', 
       overflowX: 'hidden',
       fontFamily: 'system-ui, monospace', 
