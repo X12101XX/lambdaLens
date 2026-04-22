@@ -96,12 +96,24 @@ function App() {
     return str.replace(/->/g, '→');
   };
 
-  // 演示数据（当后端不可用或返回空时）
-  const getDemoSteps = (inputExpr: string): TraceStep[] => [
-    { index: 0, exprs: inputExpr, type: 'Int', rule: null },
-    { index: 1, exprs: '3 + 1', type: 'Int', rule: 'β-reduction' },
-    { index: 2, exprs: '4', type: 'Int', rule: 'δ-reduction' }
-  ];
+  const readErrorMessage = async (res: Response): Promise<string> => {
+    const raw = (await res.text()).trim();
+    if (!raw) {
+      return `HTTP ${res.status}`;
+    }
+    try {
+      const parsed = JSON.parse(raw) as { error?: unknown; message?: unknown };
+      if (typeof parsed.error === 'string' && parsed.error.trim()) {
+        return parsed.error;
+      }
+      if (typeof parsed.message === 'string' && parsed.message.trim()) {
+        return parsed.message;
+      }
+    } catch {
+      return raw;
+    }
+    return raw;
+  };
 
   const callTrace = async () => {
     if (!expr.trim()) {
@@ -110,6 +122,7 @@ function App() {
     }
     setLoading(prev => ({ ...prev, trace: true }));
     setError('');
+    setTraceResult(null);
     setSelectedStep(null);
     const expanded = expandRules(expr);
     try {
@@ -118,6 +131,12 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ expr: toBackend(expanded) }),
       });
+      if (!res.ok) {
+        const backendError = await readErrorMessage(res);
+        setError(`单步归约失败: ${backendError}`);
+        return;
+      }
+
       const data = (await res.json()) as {
         steps?: Array<{
           index?: number;
@@ -137,27 +156,24 @@ function App() {
           }))
         : [];
 
-      if (res.ok && normalizedSteps.length > 0 && normalizedSteps[0].exprs) {
+      if (normalizedSteps.length > 0 && normalizedSteps[0].exprs) {
         setTraceResult({ ...data, steps: normalizedSteps });
         setSelectedStep(normalizedSteps[0]);
       } else {
-        const demoSteps = getDemoSteps(expr);
-        setTraceResult({ steps: demoSteps, type: 'Int' });
-        setSelectedStep(demoSteps[0]);
-        setError('后端返回空步骤，使用演示数据');
+        setError('单步归约失败: 后端返回空步骤');
       }
     } catch (err) {
-      const demoSteps = getDemoSteps(expr);
-      setTraceResult({ steps: demoSteps, type: 'Int' });
-      setSelectedStep(demoSteps[0]);
-      setError('后端未启动，使用演示数据');
+      const message = err instanceof Error ? err.message : '网络错误';
+      setError(`单步归约失败: ${message}`);
+    } finally {
+      setLoading(prev => ({ ...prev, trace: false }));
     }
-    setLoading(prev => ({ ...prev, trace: false }));
   };
 
   const callEval = async () => {
     setLoading(prev => ({ ...prev, eval: true }));
     setError('');
+    setEvalResult(null);
     const expanded = expandRules(expr);
     try {
       const res = await fetch(`${API_BASE}/api/eval`, {
@@ -165,26 +181,34 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ expr: toBackend(expanded) }),
       });
+
+      if (!res.ok) {
+        const backendError = await readErrorMessage(res);
+        setError(`求值失败: ${backendError}`);
+        return;
+      }
+
       const data = (await res.json()) as { value?: unknown; type?: unknown };
-      if (res.ok && data.value !== undefined) {
+      if (data.value !== undefined) {
         setEvalResult({
           value: String(data.value),
           type: typeof data.type === 'string' ? data.type : undefined,
         });
       } else {
-        setEvalResult({ value: '4', type: 'Int' });
-        setError('后端返回错误，使用演示数据');
+        setError('求值失败: 后端返回结果为空');
       }
     } catch (err) {
-      setEvalResult({ value: '4', type: 'Int' });
-      setError('后端未启动，使用演示数据');
+      const message = err instanceof Error ? err.message : '网络错误';
+      setError(`求值失败: ${message}`);
+    } finally {
+      setLoading(prev => ({ ...prev, eval: false }));
     }
-    setLoading(prev => ({ ...prev, eval: false }));
   };
 
   const callTypeCheck = async () => {
     setLoading(prev => ({ ...prev, type: true }));
     setError('');
+    setTypeResult(null);
     const expanded = expandRules(expr);
     try {
       const res = await fetch(`${API_BASE}/api/typecheck`, {
@@ -192,18 +216,25 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ expr: toBackend(expanded) }),
       });
+
+      if (!res.ok) {
+        const backendError = await readErrorMessage(res);
+        setError(`类型推导失败: ${backendError}`);
+        return;
+      }
+
       const data = (await res.json()) as { type?: unknown };
-      if (res.ok && typeof data.type === 'string') {
+      if (typeof data.type === 'string') {
         setTypeResult({ type: data.type });
       } else {
-        setTypeResult({ type: 'Int → Int' });
-        setError('后端返回错误，使用演示数据');
+        setError('类型推导失败: 后端返回类型为空');
       }
     } catch (err) {
-      setTypeResult({ type: 'Int → Int' });
-      setError('后端未启动，使用演示数据');
+      const message = err instanceof Error ? err.message : '网络错误';
+      setError(`类型推导失败: ${message}`);
+    } finally {
+      setLoading(prev => ({ ...prev, type: false }));
     }
-    setLoading(prev => ({ ...prev, type: false }));
   };
 
   const insertRule = (ruleExpr: string): void => {
