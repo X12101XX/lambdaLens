@@ -1,337 +1,348 @@
-#import "@preview/basic-report:0.4.0": *
+#import "@preview/hitec:0.1.0": *
 
-
-
-#show: it => basic-report(
-  doc-category: "软件应用与开发类 · 技术文档",
-  doc-title: "LambdaLens: 可视化函数式语言解释器与 HM 类型推导系统",
-  author: "XXX大学 · XXX团队",
-  affiliation: "数据科学与信息工程学院",
-  language: "zh",
-  compact-mode: true,
-  it,
+#let (
+  // Metadata
+  title,
+  author,
+  company,
+  confidential,
+  date,
+  double-sided,
+  print,
+  // Layouts
+  doc,
+  title-page,
+  title-block,
+) = documentclass(
+  title: [LambdaLens],
+  author: "王亦凡，任睿欣，杨倚",
+  company: [数信学院],
+  confidential: [#sym.bar.h 项目说明书 #sym.bar.h],
+  date: datetime.today(),
+  double-sided: true, // Enable double-sided printing
+  print: true, // Add margins to binding side for printing
 )
+
+#show: doc
+
+#title-block() // Title block without page break
+// Use this instead if you want a separate title page
+// #title-page()[/* Optional cover footnote */]
 
 #set text(
   font: (
     "Noto Serif CJK SC",
-    "Times New Roman",
   ),
   size: 12pt,
-  lang: "zh",
 )
-
-
 
 = 摘要
 
-LambdaLens 是一个基于 Haskell 实现的可视化函数式语言解释器，支持 λ 演算解析、逐步 β 归约可视化、Hindley-Milner(HM) 类型推导(Algorithm W)、提供了可视化的推导过程。本项目旨在为编译原理与程序语言理论(PLT)学习者提供一个直观、可交互的教学工具。
+LambdaLens 是一个用于可视化 $lambda$ 演算，逐步进行 $beta-$规约过程的教学平台。项目采用了HM类型系统，支持多种数据类型和函数定义，且有良好的前端页面，适合用于$lambda$演算的教学与函数式编程的基本演示。
 
-== 项目背景与意义
+= 项目背景与意义
 
-函数式编程自Lisp诞生以来, 已成为计算机科学的重要分支，近年来，许多传统的多范式编程语言都加入对函数式编程的进一步支持。如C++20引入的Ranges，Rust的闭包和迭代器，以及JavaScript的箭头函数等，都体现了函数式编程在现代软件开发中的重要地位。理解函数式编程的核心概念，如 λ 演算、类型系统和求值策略，对于计算机科学学生和软件开发者来说至关重要。然而，函数式编程的抽象性和复杂性使得初学者在学习过程中常常感到困惑。现有的教学工具多为命令行界面，缺乏直观的可视化支持，难以帮助学生理解 λ 演算的求值过程和 HM 类型推导的细节。因此，开发一个可视化的函数式语言解释器和类型推导系统具有重要的教学意义，可以帮助学生更好地理解函数式编程的核心概念，提高学习效率。
+在编程语言的发展历程中，函数式语言占据了重要的地位，而$lambda$演算作为函数式编程的理论基础，对于理解函数式编程的核心概念至关重要。然而，$lambda$演算的抽象性常常使得初学者感到疑惑，尤其是对于现代基于含类型$lambda$演算的编程语言来说。因此，开发一个能够可视化$lambda$演算过程的教学平台，可以有效帮助老师开展教学，帮助学生更好的理解$lambda$演算的核心概念和规约过程。不仅如此，现代函数式编程语言的安装也是一些计算机基础薄弱的同学都难题，开发一个在线的Lambda演算平台，也能够帮助他们在不接触现代函数式编程语言繁重的工具链的情况下，高效的学习函数式编程。并且，国内互联网上对于Lamdba演算的资料较少，此项目也解决了现代$lambda$演算教学资源匮乏的问题，具有重要的教育意义和实用价值。
 
-== 设计动机
+= 系统总体设计
 
-- 现有的 λ 演算为不含类型的纯 λ 演算，缺乏类型系统的支持，难以帮助学生理解类型系统的作用和重要性。
-- 现有的函数式编程语言安装和配置复杂，难以为初学者提供一个友好的学习环境。
-- 函数式编程发展迅速，许多概念变得极为复杂，难以通过现代函数式编程语言学习底层的 λ 演算和类型系统。
+== 系统架构图
 
-= 系统架构概述
+#pagebreak()
+#align(center)[
+  #box(
+    inset: 0.8em,
+    stroke: 1pt + black,
+    radius: 4pt,
+    align(center)[用户输入（\x -> x）],
+  )
 
-== λ 演算解析
+  ↓
 
-本模块负责将用户输入的 λ 演算表达式解析为抽象语法树（AST）。解析器基于 Haskell 的 Parsec 库实现，采用组合子解析（parser combinator）方式构建，具有可扩展性强、错误提示友好等特点。
+  #box(
+    inset: 0.8em,
+    stroke: 1pt + black,
+    radius: 4pt,
+    align(center)[Parser（解析器）],
+  )
 
-系统当前支持的语法包括：
+  ↓
 
-- *整数字面量* : `5`
-- *布尔字面量* : `true`、`false`
-- *变量*：`x`
-- *lambda 表达式*：`\x -> x`
-- *函数应用*：`f x`、`(f x) y`
-- *let 表达式*：`let x = 5 in x + 2`
-- *letrec 表达式*（支持递归）：
-  `letrec fact = \n -> if n == 0 then 1 else n * fact (n - 1) in fact 5`
-- *if 表达式*：`if x > 0 then x else -x`
-- *基本算术运算*：`+, -, *, /`
-- *括号表达式*：`(e)`
+  #box(
+    inset: 0.8em,
+    stroke: 1pt + black,
+    radius: 4pt,
+    align(center)[AST（抽象语法树）],
+  )
 
-解析器会将输入字符串转换为以下 AST 结构：
-=== 表达式节点
-- `EInt Int`：整数常量
-- `EBool Bool`：布尔常量
-- `EVar String`：变量
-- `ELam String Expr`：lambda 抽象
-- `EApp Expr Expr`：函数应用
-- `ELet String Expr Expr`：let 绑定
-- `ELetRec String Expr Expr`：递归绑定
-- `EIf Expr Expr Expr`：条件表达式
-- `EBinOp Op Expr Expr`：二元运算
+  ↓
 
-=== 二元运算符（Op）
+  #box(
+    inset: 0.8em,
+    stroke: 1pt + black,
+    radius: 4pt,
+    align(center)[Evaluator（β-归约引擎）],
+  )
 
-- `Add`：加法
-- `Sub`：减法
-- `Mul`：乘法
-- `Div`：除法
-- `Eq`：相等比较
-- `Lt`：小于比较
-- `Gt`：大于比较
+  ↓
 
-=== 示例
-输入表达式 `(x -> x + 1) 1` 将被解析为以下 AST：
-```haskell
-  EApp
-  (ELam "x" (EBinOp Add (EVar "x") (EInt 1)))
-  (EInt 1)
+  #box(
+    inset: 0.8em,
+    stroke: 1pt + black,
+    radius: 4pt,
+    align(center)[API（应用程序接口）],
+  )
+
+  ↓
+
+  #box(
+    inset: 0.8em,
+    stroke: 1pt + black,
+    radius: 4pt,
+    align(center)[Frontend（前端界面）],
+  )
+]
+
+
+
+== 模块说明
+本系统采用分层模块化设计，将 $lambda$ 演算表达式的解析、抽象语法树构建、β‑归约执行、可视化渲染与前端交互解耦，形成清晰的技术结构。
+=== Parser 模块
+==== 功能
+负责将用户输入的 $lambda$ 演算表达式解析成抽象语法树（AST）。支持基本的 $lambda$ 演算语法，包括变量、函数抽象和函数应用。
+==== 内部实现
+- 采用递归下降解析
+- 支持变量、函数抽象、函数应用
+- 处理括号优先级
+
+=== AST 模块
+==== 功能
+定义 $lambda$ 表达式的内部表示结构，作为系统的核心中间层。
+
+=== Evaluator 模块
+==== 功能
+实现 $beta$‑规约引擎，负责执行 $lambda$ 演算表达式的规约过程，使用应用序列策略进行求值。接受AST，输出规约后的AST。
+==== 内部逻辑
+- 支持正常序（Normal Order）归约策略
+- 实现 α‑重命名避免变量捕获
+- 实现替换（Substitution）算法
+
+=== API 模块
+==== 功能
+为前端提供统一的 HTTP 接口，屏蔽内部实现细节。
+
+提供接口包括：
+- `/api/trace`：返回 $lambda$ 演算表达式的规约过程的详细步骤。
+- `/api/typecheck`：提供类型检查服务，验证 $lambda$ 表达式的类型正确性。
+- `/api/eval`：提供表达式求值服务，执行 $lambda$ 演算表达式的规约。
+
+这三个API的请求题均是
+```json
+{ "expr": String }
 ```
-该模块为后续模块提供了一个统一的表达式表示形式，支持各种 λ 演算表达式的解析和处理。
+而他们的响应体如下：
+- `/api/trace`：
+  ```json
+  { "steps": [...], "type": String? }
+  ```
+- `/api/typecheck`：
+  ```json
+  { "type": String }
+  ```
+- `/api/eval`： ```json
+  { "value": String, "type": String }
+  ```
 
-== β 归约可视化
-本模块负责对 λ 演算表达式进行逐步 β 归约，并将每一步的求值过程记录下来，用于后续的可视化展示。
+==== 设计理由
+实现前后端分离，便于维护和扩展，同时也为未来可能的移动端或其他平台提供接口支持。
 
-=== 求值策略
-系统采用应用序求值（applicative order evaluation）策略，即先求值函数和参数，然后再进行函数应用。其核心特点是：
-- 在执行函数应用 `f x` 时，会先对 `f` 和 `x` 分别求值；
-- 参数必须先被求值为值（Value），然后才会执行 β 归约；
-- 求值顺序明确、可预测，适合教学与可视化展示。
-例如，对于表达式
-```haskell
-  (x -> x + 1) （2 * 3)
+=== Frontend 模块
+
+= 核心技术实现
+
+== $lambda$ 演算语法
+
+系统采用 Haskell 风格的 λ 演算具体语法（Concrete Syntax），支持变量、函数抽象与函数应用。
+基本形式如下：
+
+-变量（Variable）：`x`
+- 抽象（Abstraction）：`\x -> e`
+- 应用（Application）：`f x`
+- 括号（Parentheses）：`f (g x)`用于显式指定优先级
+
+== AST 定义
+
+#pagebreak()
+
+```Haskell
+data Expr
+  = EInt Int
+  | EBool Bool
+  | EVar String
+  | ELam String Expr
+  | EApp Expr Expr
+  | ELet String Expr Expr
+  | ELetRec String Expr Expr
+  | EIf Expr Expr Expr
+  | EBinOp Op Expr Expr
+  deriving (Show, Eq)
+
+data Op
+  = Add
+  | Sub
+  | Mul
+  | Div
+  | Eq
+  | Lt
+  | Gt
+  deriving (Show, Eq)
+
 ```
-应用序的求值顺序就是
-1. *求值参数*：`2 * 3 → 6`
-2. *执行 β 归约*：`(λx. x + 1) 6 → 6 + 1`
-3. *求值算术表达式*：`6 + 1 → 7`
-这种求值方式与系统内部的实现完全一致，也与除了 Haskell 以外的许多函数式编程语言的求值策略相符，具有较好的教学意义。
+本项目并没有选择较为简单的AST定义，而是选择了一个较为复杂的AST定义，支持整数、布尔值、变量、函数抽象、函数应用、let表达式、递归函数定义、条件表达式以及二元操作。这是因为现代的$lambda$演算教学不仅仅局限于纯粹的函数抽象和应用，还需要涵盖更多的语言特性，以便更好地模拟现代函数式编程语言的特性，从而提高教学的实用性和针对性。
 
-=== 归约过程记录
-为了支持可视化展示，系统在每一步 β 归约过程中记录以下信息：
-- *归约规则（rule）*：本次归约使用的规则名称，例如 Beta-Reduction、Let、If-True、BinOp 等；
-- *归约后的表达式（expr）*：执行该规则后得到的新表达式。
+== $beta$‑规约算法
+因为现代函数式编程语言多为严格求值，所以本项目采用了应用序列（Applicative Order）策略进行 $beta$‑规约。该策略先对函数和参数进行求值，然后再进行函数应用。
 
-每一步的记录都被封装成一个 `Step` ，包含以下内容
-- `stepRule`：归约规则；
-- `stepAfter`：归约后的表达式。
+本项目的 $beta$‑规约算法实现了以下功能：
+- 支持应用序列（Applicative Order）策略进行规约
+- 实现 α‑重命名避免变量捕获
+- 实现替换（Substitution）算法
+- 支持递归函数的规约
+- 支持条件表达式的规约
+- 支持二元操作的规约
+- 支持 let 表达式的规约
+- 支持 letrec 表达式的规约
+- 支持类型检查，确保表达式的类型正确性
 
-在 API 层，这些信息会被转换为 JSON 格式，并附带一个自增的步骤编号（index），用于前端展示“逐步求值过程”。
+核心算法为：替换（Substitution），可以用如下的$lambda$演算表达式来表示：
+```bash
+(λx. e1) e2  →  e1[x := e2]
+```
+== HM 类型推导（Algorithm W）\
+=== 简述
 
-需要注意的是：
-系统并不会记录变量替换内容、替换位置或环境变化，而是仅记录“本次归约使用了哪条规则”以及“归约后的表达式”。
+系统实现了 Hindley-Milner（HM）类型系统的核心算法 —— Algorithm W，用于对 $lambda$ 表达式进行自动类型推导。HM 类型系统是现代函数式语言（如 Haskell、OCaml、ML）的理论基础。本系统的 HM 类型推导模块主要用于：验证用户输入的 $lambda$ 表达式是否类型正确，并在可能的情况下推导出其最泛类型。
 
-== HM 类型推导(Algorithm W)
+HM类型系统有如下特点：
+- 无需类型注解即可自动推导类型
+- 支持多态（Let-Polymorphism）
+- 能推导出表达式的最泛类型（Principal Type）
 
-=== HM 类型系统概述
-Hindley-Milner（HM）类型系统是一种广泛应用于函数式语言（如 Haskell、OCaml、ML）的静态类型系统。其核心特性包括：
-
-- 无需类型注解即可自动推导类型（type inference）
-- 支持多态（polymorphism）
-- 能够推导出表达式的最泛类型（principal type）
-
-HM 类型系统的关键优势在于：它既保证了类型安全，又保持了语言的简洁性，非常适合作为教学工具。
-
-=== Algorithm W 简介
-Algorithm W 是 HM 类型系统中最经典、最常用的类型推导算法，由 Damas 和 Milner 在 1978 年提出。其核心思想是：
-
-1. 自顶向下遍历表达式结构
-2. 为每个子表达式生成类型变量
-3. 根据语法结构生成类型约束（constraints）
-4. 通过合一（unification）求解约束
-5. 在 let 绑定处进行泛化（generalization）与实例化（instantiation）
-
-最终得到表达式的最泛类型。
-
-Algorithm W 的重要性在于：
-
-- 它是 HM 类型推导的标准算法
-- 它是现代类型推导器（如 GHC）的理论基础
-- 它的推导过程非常适合可视化展示
-
-本系统实现了 Algorithm W 的完整流程，并通过 API 将推导结果返回给前端。
-
-=== 类型系统
-
+=== 类型系统定义：
+```Haskell
+data Type
+  = TInt
+  | TBool
+  | TVar String
+  | TFun Type Type
+  deriving (Show, Eq)
+```
 系统支持以下类型构造：
+- 基本类型：Int、Bool
+- 类型变量：a、b、t1 等
+- 函数类型：τ1 → τ2
 
-- *基本类型*：`Int`、`Bool`
-- *类型变量*：`a`、`b`、`t1` 等
-- *函数类型*：`τ1 → τ2`
+除以上静态类型，系统也支持多态类型(Scheme):
+```haskell
+data Scheme = Forall [String] Type
+```
 
-这些类型对应系统内部的 `Type` 定义：
+=== Substitutable 类型类
+为了统一处理类型变量替换，本系统实现了 Substitutable 类型类：
+```haskell
+class Substitutable a where
+  apply :: Subst -> a -> a
+  ftv   :: a -> Set String
 
-- `TInt`：整数类型
-- `TBool`：布尔类型
-- `TVar a`：类型变量
-- `TFun a b`：函数类型
+```
+该类型类支持：
+- 对 Type、Scheme、TypeEnv 进行替换
+- 计算自由类型变量（Free Type Variables）
 
-例如： `TFun (TVar "a") (TVar "a")`
+这是 Algorithm W 的基础设施。
 
-表示一个函数类型，输入类型为 `a`，输出类型也为 `a`，即一个多态函数。
+=== 替换（Substitution）与合一（Unification）
 
-=== 约束生成（Constraint Generation）
+系统实现了 Robinson 合一算法，用于求解类型约束：
 
-在推导过程中，系统会根据表达式结构生成类型约束。例如：
+```haskell
+unify :: Type -> Type -> Either String Subst
+```
 
-- 对应用表达式 `e1 e2`，生成约束：
-  `type(e1) = type(e2) → t`
-- 对二元运算 `e1 + e2`，生成约束：
-  `type(e1) = Int`
-  `type(e2) = Int`
-- 对 if 表达式：
-  `type(cond) = Bool`
-  `type(then) = type(else)`
+支持：
+- 基本类型匹配
+- 类型变量绑定（bind）
+- 函数类型的递归合一
+- 无限类型检查（Occurs Check）
 
-这些约束随后由合一算法求解。
+替换组合使用：
+```haskell
+composeSubst :: Subst -> Subst -> Subst
+```
+用于合成多个替换，确保类型推导过程中替换的一致性。
 
-=== 合一（Unification）
+=== 实例化与泛化
+==== 实例化（Instantiation）
+将多态类型 $forall$a. a $->$ a 转换为具体类型：
+```haskell
+instantiate :: Scheme -> Infer Type
+```
+=== 泛化（Generalization）
+在 `let x = e1 in e2` 中，将 `e1` 的类型泛化为 `Scheme`：
+```haskell
+generalize :: TypeEnv -> Type -> Scheme
+```
+```haskell
+x = \y -> y
+```
+对于上述表达式，得到的泛化类型为：
+```haskell
+x : ∀a. a → a
+```
 
-系统实现了 Robinson 合一算法，用于求解类型约束集合。
-合一的结果是一个替换（substitution），将类型变量替换为具体类型或其他类型变量。
-例如：
-对于约束 `a = Int` 和 `b = a → a`，
+=== 模块价值
 
-合一的结果是 `a :: Int, b :: Int → Int`
+HM 类型推导模块为系统提供：
 
-当合一失败时(如遇到不一致的约束)，系统会返回一个错误
+- 静态类型检查能力
+- 自动类型推导能力
+- 多态支持（Let-Polymorphism）
+- 递归函数类型推导（LetRec）
+- 与$lambda$演算归约引擎的深度结合
 
-=== 泛化与实例化
-在 let 绑定处，系统会对类型进行泛化，将类型变量提升为多态类型。
+大幅度提升了系统的理论深度
 
-例如：
-对于表达式 `let id = \x -> x in ...`，
+= 数据结构设计
+为了支持 λ 演算的解析、规约、类型推导与可视化，本系统设计了一套结构清晰、语义严谨的数据结构体系。本节将介绍系统中最核心的四类数据结构：Type、Scheme、Subst、TypeEnv，它们共同构成 HM 类型推导与 $beta$‑规约的基础。
 
-系统会推导出 `id :: ∀a. a → a`
+== Type：静态类型
+`Type`是系统中表示类型的核心数据结构，定义如下：
+```Haskell
+data Type
+  = TInt
+  | TBool
+  | TVar String
+  | TFun Type Type
+  deriving (Show, Eq)
+```
 
-这表示 `id`是一个多态函数，可以接受任何类型的输入并返回相同类型的输出。
+== Scheme：多态类型（
+`Scheme ` 用于表示 HM 类型系统中的多态类型，定义如下：
+```haskell
+data Scheme = Forall [String] Type
+```
+== Subst：替换表
+`Subst` 是类型推导中最关键的数据结构之一，用于记录类型变量的替换关系，定义如下：
+```haskell
+type Subst = Map String Type
+```
 
-=== 类型推导过程
-以表达式(\x -> x + 1) 3为例，系统的类型推导过程如下：
-1. `x + 1` 生成约束：`type(x) = Int`
-2. `\x -> x + 1` 推导类型：`Int → Int`
-3. 应用表达式 `(\x -> x + 1) 3` 推导类型：`Int`
-而后，系统通过 `inferExpr` 函数完成整个推导过程，并在 API 中以字符串形式返回类型结果。
+= 创新点
+== 可视化$lambda$演算规约
+传统的$lambda$演算教学通常依赖手工推导，学生难以直观理解$beta$‑规约的动态过程。本项目通过可视化引擎，将每一步规约过程直观显示，并附有规约过程。这使得抽象的 λ 演算规约过程变得可观察、可追踪、可理解，大幅提升教学效果。
 
-== 技术难点与解决方案
-本项目从零实现了 λ 演算解析、β 归约求值、HM 类型推导以及可视化追踪功能，涉及编译原理、类型系统、解释器设计等多个复杂领域。在开发过程中，我们遇到了以下关键技术难点，并通过相应的方案成功解决。
+== 支持部分现代函数式编程语言特性的$lambda$演算
+传统的$lambda$演算教学通常局限于纯粹的函数抽象和应用，而现代函数式编程语言（如 Haskell、OCaml）引入了更多的语言特性，如 let 表达式、递归函数定义、条件表达式以及二元操作等。本项目的$lambda$演算教学平台支持这些现代函数式编程语言的特性，使得教学内容更贴近实际编程语言的特性，从而提高教学的实用性和针对性。
 
-=== λ 表达式的解析与抽象语法树构建
-*难点*:
-λ 演算的语法具有高度嵌套性，括号、省略形式（如 `\x -> x`）、应用的左结合规则等都容易导致解析歧义。此外，解析器需要同时支持 let、if、二元运算等扩展语法，以达到更好的教学效果。
-
-*解决方案*:
-为了解决这些问题，我们采用了 Haskell 的 Parsec 库，利用其强大的组合子解析功能，在巧妙绕开了这些复杂度的同时，构建了一个模块化、可扩展的解析器。
-
-同时，我们定义了清晰的 AST 数据结构，确保解析结果能够准确反映输入表达式的语义结构，并为后续的求值和类型推导提供统一的输入格式。
-
-并且，我们严格区分了“原子表达式”和“复合表达式”，通过递归下降解析的方式，确保了正确处理括号和应用的结合性。
-
-=== β 归约的求值策略与过程记录
-*难点*:
-- 应用序（Call-by-Value）需要先求值参数，再执行 β 归约
-- 归约过程需要记录每一步的表达式变化
-- 归约必须避免变量捕获（variable capture）
-- 需要限制归约步数，防止无限循环（如 Ω = (λx. x x)(λx. x x)）
-
-*解决方案*:
-- 我们使用闭包(Closure)来表示函数值，确保在执行 β 归约时正确处理变量作用域，避免变量捕获问题。
-- 通过一个 `Step` 数据结构记录每一步的归约规则和结果表达式，并在 API 层以 JSON 格式返回给前端，支持可视化展示
-- 使用 `traceWithLimit` 限制最大步数，避免死循环
-- 通过环境替换避免变量捕获问题
-
-最终实现了可视化友好的逐步求值过程。
-
-=== HM 类型推导的约束生成与合一算法
-*难点：*
-Algorithm W 涉及多个复杂步骤：
-- 类型变量生成
-- 约束生成
-- 合一（Unification）
-- 泛化（Generalization）
-- 实例化（Instantiation）
-这些步骤之间存在依赖关系，稍有不慎就会导致类型推导失败或产生错误类型。
-
-*解决方案：*
-- 将类型推导尽量拆分为独立函数：约束生成、合一、替换应用，使得每个函数职责单一，易于调试和维护
-- 使用替换（Substitution）统一管理类型变量映射
-- 在 let 绑定处实现标准的 let 多态（Let-Polymorphism）
-- 对每个表达式节点进行系统化的类型推导
-
-=== 后端 API 与前端可视化的协同设计
-
-*难点：*
-- 后端需要返回结构化的求值步骤与类型信息
-- 前端需要将步骤序列渲染为动画式的“逐步归约”
-- 表达式字符串化（pretty printing）必须保持一致性
-
-*解决方案：*
-- 后端统一使用 JSON 格式返回：`expr`、`rule`、`index`
-- 使用 `prettyExpr` 和 `prettyRule` 保证前后端表达一致
-- 前端根据完整步骤序列动态渲染归约过程
-
-实现了清晰直观的可视化效果。
-
-=== 5. 递归与闭包环境的正确处理
-
-*难点：*
-- letrec 需要支持递归绑定
-- 闭包必须捕获定义时的环境，而不是调用时的环境
-- 环境链必须保持正确的作用域关系
-
-*解决方案：*
-- 在 letrec 中构造自引用环境（self-referential environment）
-- 在 λ 抽象处保存 closureEnv
-- 在应用时使用 closureEnv 执行求值
-
-确保了递归函数与高阶函数的正确行为。
-
-= 创新点总结
-
-本项目从零实现了 λ 演算的解析、求值、类型推导与可视化展示，面向编程语言初学者与教学场景，具有以下创新点：
-
-== 统一的 λ 演算可视化平台
-传统 λ 演算工具往往只支持单一功能（如求值或类型推导），而本系统将以下功能整合在同一平台中：
-
-- 语法解析（Parser）
-- β 归约逐步可视化（Stepper）
-- HM 类型推导（Algorithm W）
-- 表达式与类型的统一展示
-- 
-== 完整实现 HM 类型系统（Algorithm W）
-系统从零实现了 Algorithm W，包括：
-
-- 类型变量生成  
-- 约束生成  
-- 合一（Unification）  
-- 泛化与实例化（Let 多态）  
-
-相比于仅展示最终类型的工具，本系统能够推导出表达式的最泛类型，具有更高的教学价值。
-
-== 可视化的逐步 β 归约过程
-系统不仅能求值，还能展示每一步归约后的表达式与使用的规则（如 Beta-Reduction、Let、If-True 等）。  
-这种“逐步动画式”的展示方式有助于初学者理解 λ 演算的求值过程。
-
-== 轻量化、可扩展的解释器架构
-解释器采用模块化设计：
-
-- Parser  
-- Evaluator  
-- TypeInfer  
-- Stepper  
-- API  
-
-每个模块均可独立扩展，例如：
-
-- 增加新的语法（如 Pair、List）  
-- 增加新的类型构造（如多态 LetRec）  
-- 增加新的求值策略（如正常序）  
-
-== 前后端分离的交互式教学工具
-后端使用 Haskell 实现核心算法，前端使用 Vite + TypeScript 实现交互界面。  
-这种架构使得：
-
-- 算法逻辑与界面逻辑完全解耦  
-- 前端可以自由设计可视化效果  
-- 后端可以作为独立 API 服务复用  
-
-适合教学平台、在线课程或编译原理实验系统使用。
+== HM 类型系统的实现
+虽然 HM 类型系统是不实现依赖类型的函数式编程语言的核心类型系统，但在$lambda$演算教学平台中，常见的多为无类型$lambda$演算，而 HM 类型系统的引入使得教学平台能够支持类型检查和类型推导功能，帮助学生理解类型系统的概念和作用，并且为未来可能的依赖类型系统的引入奠定扎实了基础。
