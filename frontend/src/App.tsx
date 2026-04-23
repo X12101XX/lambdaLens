@@ -105,107 +105,62 @@ function isReserved(name: string): boolean {
   return RESERVED_OPS.includes(name);
 }
 
-type CSSProperties = React.CSSProperties;
-
-const styles: Record<string, CSSProperties> = {
-  container: {
-    display: 'flex',
-    width: '100%',
-    minHeight: '100vh',
-    overflowX: 'hidden',
-    fontFamily: 'system-ui, monospace',
-    background: '#f8fafc',
-    margin: 0,
-    padding: 0,
-  },
-  main: {
-    flex: 1,
-    padding: '1.5rem',
-    overflow: 'auto',
-  },
-  input: {
-    flex: 1,
-    minWidth: 200,
-    padding: '0.8rem',
-    border: '1px solid #e2e8f0',
-    borderRadius: 8,
-    fontFamily: 'monospace',
-    fontSize: '0.9rem',
-    background: 'white',
-    color: '#1f2937',
-    resize: 'vertical',
-  },
-  error: {
-    background: '#fef2f2',
-    color: '#ef4444',
-    padding: '0.5rem',
-    borderRadius: 6,
-    marginBottom: '0.8rem',
-    fontSize: '0.75rem',
-  },
-  card: {
-    background: 'white',
-    borderRadius: 8,
-    padding: '0.8rem',
-    marginBottom: '0.8rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)',
-  },
-  cardTitle: {
-    fontWeight: 'bold',
-    marginBottom: '0.3rem',
-  },
-  ruleItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '0.5rem 0.6rem',
-    borderRadius: 6,
-    background: '#f1f5f9',
-    cursor: 'pointer',
-    transition: 'background 0.15s',
-  },
-  btn: {
-    border: 'none',
-    borderRadius: 6,
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: '0.75rem',
-    transition: 'opacity 0.15s ease',
-  },
-  inputField: {
-    width: '100%',
-    padding: '0.4rem',
-    marginBottom: '0.3rem',
-    borderRadius: 4,
-    border: '1px solid #e2e8f0',
-    fontSize: '0.8rem',
-  },
-  smallBtn: {
-    width: 22,
-    height: 22,
-    border: 'none',
-    borderRadius: 4,
-    cursor: 'pointer',
-    fontSize: '0.65rem',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-};
-
-const buttonStyles: Record<string, CSSProperties> = {
-  primary: { ...styles.btn, padding: '0.5rem 1rem', background: '#3b82f6', cursor: 'pointer' },
-  success: { ...styles.btn, padding: '0.5rem 1rem', background: '#10b981', cursor: 'pointer' },
-  purple: { ...styles.btn, padding: '0.5rem 1rem', background: '#8b5cf6', cursor: 'pointer' },
-  delete: { ...styles.smallBtn, background: '#ef4444', color: 'white' },
-  edit: { ...styles.smallBtn, background: '#64748b', color: 'white', marginRight: 4 },
-  addRule: { ...styles.btn, width: '100%', padding: '0.4rem', background: '#667eea', cursor: 'pointer' },
-  save: { ...styles.btn, flex: 1, padding: '0.4rem', background: '#10b981', cursor: 'pointer' },
-  cancel: { ...styles.btn, flex: 1, padding: '0.4rem', background: '#94a3b8', cursor: 'pointer' },
-  confirm: { ...styles.btn, flex: 1, padding: '0.4rem', background: '#3b82f6', cursor: 'pointer' },
-};
-
-function App() {
+// 语法说明模态框组件（修复反斜杠错误）
+function GrammarModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: 'white',
+          borderRadius: 12,
+          padding: '1.5rem',
+          maxWidth: 500,
+          width: '90%',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 style={{ marginBottom: '0.75rem', color: '#3b82f6' }}>语法规则</h3>
+        <ul style={{ marginLeft: '1.25rem', color: '#334155', fontSize: '0.85rem', lineHeight: 1.5 }}>
+          <li>{"λ 抽象: "}<code>{"\\x -> expr"}</code></li>
+          <li>{"函数应用: "}<code>{"f x"}</code></li>
+          <li>{"条件表达式: "}<code>{"if p then e1 else e2"}</code></li>
+          <li>{"算术运算: "}<code>{"+ - * /"}</code></li>
+          <li>{"布尔值: "}<code>{"true / false"}</code></li>
+          <li>{"变量名: 字母序列"}</li>
+        </ul>
+        <button
+          onClick={onClose}
+          style={{
+            marginTop: '1rem',
+            padding: '0.4rem 1rem',
+            background: '#3b82f6',
+            border: 'none',
+            borderRadius: 6,
+            color: 'white',
+            cursor: 'pointer',
+          }}
+        >
+          关闭
+        </button>
+      </div>
+    </div>
+  );
+}function App() {
   const [expr, setExpr] = useState('(\\x -> x + 1) 3');
   const [traceResult, setTraceResult] = useState<TraceResult | null>(null);
   const [evalResult, setEvalResult] = useState<EvalResult | null>(null);
@@ -213,6 +168,7 @@ function App() {
   const [selectedStep, setSelectedStep] = useState<number>(0);
   const [loading, setLoading] = useState<LoadingState>({ trace: false, eval: false, type: false });
   const [error, setError] = useState('');
+  const [showGrammar, setShowGrammar] = useState(false);
 
   const [customRules, setCustomRules] = useLocalStorage<Rule[]>('lambdaLens_customRules', []);
   const [sidebarWidth, setSidebarWidth] = useLocalStorage<number>('lambdaLens_sidebarWidth', 260);
@@ -260,11 +216,6 @@ function App() {
 
   const insertRule = useCallback((ruleExpr: string) => {
     setExpr(ruleExpr);
-    setTraceResult(null);
-    setEvalResult(null);
-    setTypeResult(null);
-    setSelectedStep(0);
-    setError('');
   }, []);
 
   const handleAddRule = useCallback(() => {
@@ -437,10 +388,9 @@ function App() {
   const selectedStepData = useMemo(() => {
     if (!traceResult) return null;
     return traceResult.steps.find(s => s.index === selectedStep);
-  }, [traceResult, selectedStep]);
-
-  return (
-    <div style={styles.container}>
+  }, [traceResult, selectedStep]);  return (
+    <div style={{ display: 'flex', width: '100%', minHeight: '100vh', overflowX: 'hidden', fontFamily: 'system-ui, monospace', background: '#f8fafc', margin: 0, padding: 0 }}>
+      {/* 可拖拽侧边栏 */}
       <aside
         style={{
           width: sidebarWidth,
@@ -456,7 +406,7 @@ function App() {
       >
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e2e8f0' }}>
           <h2 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1e293b' }}>实例</h2>
-          <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.2rem' }}>点击使用表达式</p>
+          <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.2rem' }}>点击使用表达式</p >
         </div>
 
         <div style={{ flex: 1, overflow: 'auto', padding: '0.75rem' }}>
@@ -471,36 +421,36 @@ function App() {
                         placeholder="名称"
                         value={editRuleName}
                         onChange={(e) => setEditRuleName(e.target.value)}
-                        style={styles.inputField}
+                        style={{ width: '100%', padding: '0.4rem', marginBottom: '0.3rem', borderRadius: 4, border: '1px solid #e2e8f0', fontSize: '0.8rem' }}
                       />
                       <input
                         type="text"
                         placeholder="表达式"
                         value={editRuleExpr}
                         onChange={(e) => setEditRuleExpr(e.target.value)}
-                        style={styles.inputField}
+                        style={{ width: '100%', padding: '0.4rem', marginBottom: '0.3rem', borderRadius: 4, border: '1px solid #e2e8f0', fontSize: '0.8rem' }}
                       />
                       <div style={{ display: 'flex', gap: '0.25rem' }}>
-                        <button onClick={handleAddRule} style={buttonStyles.confirm}>保存</button>
-                        <button onClick={cancelEditRule} style={buttonStyles.cancel}>取消</button>
+                        <button onClick={handleAddRule} style={{ flex: 1, padding: '0.4rem', background: '#3b82f6', border: 'none', borderRadius: 4, color: 'white', cursor: 'pointer' }}>保存</button>
+                        <button onClick={cancelEditRule} style={{ flex: 1, padding: '0.4rem', background: '#94a3b8', border: 'none', borderRadius: 4, color: 'white', cursor: 'pointer' }}>取消</button>
                       </div>
                     </div>
                   ) : (
                     <div
                       onClick={() => insertRule(rule.expr)}
-                      style={styles.ruleItem}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.6rem', borderRadius: 6, background: '#f1f5f9', cursor: 'pointer', transition: 'background 0.15s' }}
                       onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#e2e8f0'; }}
                       onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#f1f5f9'; }}
                     >
                       <code style={{ fontSize: '0.75rem', color: '#334155', flex: 1 }}>{rule.display}</code>
                       <div style={{ display: 'flex' }}>
                         <button
-                          style={buttonStyles.edit}
+                          style={{ width: 22, height: 22, border: 'none', borderRadius: 4, background: '#64748b', color: 'white', fontSize: '0.65rem', cursor: 'pointer', marginRight: 4 }}
                           onClick={(e) => { e.stopPropagation(); startEditRule(idx); }}
                           aria-label="编辑规则"
                         >e</button>
                         <button
-                          style={buttonStyles.delete}
+                          style={{ width: 22, height: 22, border: 'none', borderRadius: 4, background: '#ef4444', color: 'white', fontSize: '0.65rem', cursor: 'pointer' }}
                           onClick={(e) => { e.stopPropagation(); deleteRule(idx); }}
                           aria-label="删除规则"
                         >x</button>
@@ -523,22 +473,22 @@ function App() {
                 placeholder="名称 (如: add1)"
                 value={newRuleName}
                 onChange={(e) => setNewRuleName(e.target.value)}
-                style={styles.inputField}
+                style={{ width: '100%', padding: '0.4rem', marginBottom: '0.3rem', borderRadius: 4, border: '1px solid #e2e8f0', fontSize: '0.8rem' }}
               />
               <input
                 type="text"
                 placeholder="表达式 (如: \x -> x + 1)"
                 value={newRuleExpr}
                 onChange={(e) => setNewRuleExpr(e.target.value)}
-                style={styles.inputField}
+                style={{ width: '100%', padding: '0.4rem', marginBottom: '0.3rem', borderRadius: 4, border: '1px solid #e2e8f0', fontSize: '0.8rem' }}
               />
               <div style={{ display: 'flex', gap: '0.3rem' }}>
-                <button onClick={handleAddRule} style={buttonStyles.save}>保存</button>
-                <button onClick={() => { setShowAddRule(false); setNewRuleName(''); setNewRuleExpr(''); }} style={buttonStyles.cancel}>取消</button>
+                <button onClick={handleAddRule} style={{ flex: 1, padding: '0.4rem', background: '#10b981', border: 'none', borderRadius: 4, color: 'white', cursor: 'pointer' }}>保存</button>
+                <button onClick={() => { setShowAddRule(false); setNewRuleName(''); setNewRuleExpr(''); }} style={{ flex: 1, padding: '0.4rem', background: '#94a3b8', border: 'none', borderRadius: 4, color: 'white', cursor: 'pointer' }}>取消</button>
               </div>
             </div>
           ) : (
-            <button onClick={() => setShowAddRule(true)} style={buttonStyles.addRule}>+ 新建规则</button>
+            <button onClick={() => setShowAddRule(true)} style={{ width: '100%', padding: '0.4rem', background: '#667eea', border: 'none', borderRadius: 6, color: 'white', cursor: 'pointer', fontSize: '0.7rem' }}>+ 新建规则</button>
           )}
         </div>
 
@@ -557,12 +507,10 @@ function App() {
         />
       </aside>
 
-      <main style={styles.main}>
+      <main style={{ flex: 1, padding: '1.5rem', overflow: 'auto' }}>
         <div style={{ marginBottom: '1.5rem' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#667eea', marginBottom: '0.25rem' }}>
-            lambdaLens
-          </h1>
-          <p style={{ color: '#94a3b8', fontSize: '0.75rem' }}>beta 归约追踪 · Hindley-Milner 类型推导</p>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#667eea', marginBottom: '0.25rem' }}>lambdaLens</h1>
+          <p style={{ color: '#94a3b8', fontSize: '0.75rem' }}>beta 归约追踪 · Hindley-Milner 类型推导</p >
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
@@ -570,67 +518,51 @@ function App() {
             value={expr}
             onChange={(e) => setExpr(e.target.value)}
             rows={2}
-            style={styles.input}
+            style={{ flex: 1, minWidth: 200, padding: '0.8rem', border: '1px solid #e2e8f0', borderRadius: 8, fontFamily: 'monospace', fontSize: '0.9rem', background: 'white', color: '#1f2937', resize: 'vertical' }}
             aria-label="输入表达式"
           />
+          <button
+            onClick={() => setShowGrammar(true)}
+            style={{ padding: '0.5rem 1rem', background: '#64748b', border: 'none', borderRadius: 8, color: 'white', fontWeight: 'bold', fontSize: '0.75rem', cursor: 'pointer' }}
+          >
+            语法
+          </button>
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-          <button onClick={callTrace} disabled={loading.trace} style={{ ...buttonStyles.primary, opacity: loading.trace ? 0.6 : 1 }}>
+          <button onClick={callTrace} disabled={loading.trace} style={{ flex: 1, padding: '0.5rem', background: '#3b82f6', border: 'none', borderRadius: 6, color: 'white', fontWeight: 'bold', fontSize: '0.75rem', cursor: 'pointer', opacity: loading.trace ? 0.6 : 1 }}>
             {loading.trace ? '...' : '单步归约'}
           </button>
-          <button onClick={callEval} disabled={loading.eval} style={{ ...buttonStyles.success, opacity: loading.eval ? 0.6 : 1 }}>
+          <button onClick={callEval} disabled={loading.eval} style={{ flex: 1, padding: '0.5rem', background: '#10b981', border: 'none', borderRadius: 6, color: 'white', fontWeight: 'bold', fontSize: '0.75rem', cursor: 'pointer', opacity: loading.eval ? 0.6 : 1 }}>
             {loading.eval ? '...' : '直接求值'}
           </button>
-          <button onClick={callTypeCheck} disabled={loading.type} style={{ ...buttonStyles.purple, opacity: loading.type ? 0.6 : 1 }}>
+          <button onClick={callTypeCheck} disabled={loading.type} style={{ flex: 1, padding: '0.5rem', background: '#8b5cf6', border: 'none', borderRadius: 6, color: 'white', fontWeight: 'bold', fontSize: '0.75rem', cursor: 'pointer', opacity: loading.type ? 0.6 : 1 }}>
             {loading.type ? '...' : '类型推导'}
           </button>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
-
-        {traceResult && traceResult.inputExpr !== expr && (
-          <div style={{ background: '#fef3c7', color: '#92400e', padding: '0.5rem', borderRadius: 6, marginBottom: '0.8rem', fontSize: '0.75rem' }}>
-            表达式已修改，结果对应: {traceResult.inputExpr}
-          </div>
-        )}
+        {error && <div style={{ background: '#fef2f2', color: '#ef4444', padding: '0.5rem', borderRadius: 6, marginBottom: '0.8rem', fontSize: '0.75rem' }}>{error}</div>}
 
         {traceResult && (
-          <div style={styles.card}>
-            <div style={{ ...styles.cardTitle, color: '#3b82f6' }}>单步归约</div>
+          <div style={{ background: 'white', borderRadius: 8, padding: '0.8rem', marginBottom: '0.8rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: '#3b82f6' }}>单步归约</div>
 
             {selectedStepData && selectedStepData.rule && (
-              <div style={{
-                background: '#f0f9ff',
-                border: '1px solid #bae6fd',
-                borderRadius: 6,
-                padding: '0.6rem 0.75rem',
-                marginBottom: '0.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}>
-                <span style={{ color: '#64748b', fontSize: '0.75rem' }}>使用规则:</span>
-                <span style={{
-                  color: '#0284c7',
-                  fontWeight: 600,
-                  fontSize: '0.85rem',
-                  animation: 'fadeIn 0.3s ease-out',
-                }}>
-                  {selectedStepData.rule}
-                </span>
+              <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 6, padding: '0.4rem 0.6rem', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ color: '#64748b', fontSize: '0.7rem' }}>使用规则:</span>
+                <span style={{ color: '#0284c7', fontWeight: 500, fontSize: '0.8rem' }}>{selectedStepData.rule}</span>
               </div>
             )}
 
             <div style={{ maxHeight: 280, overflow: 'auto' }}>
-              {traceResult.steps?.slice(1).map((step) => {
+              {traceResult.steps.slice(1).map((step) => {
                 const isSelected = selectedStep === step.index;
                 return (
                   <div
                     key={step.index}
                     onClick={() => setSelectedStep(step.index)}
                     style={{
-                      padding: '0.5rem 0.6rem',
+                      padding: '0.4rem 0.6rem',
                       fontSize: '0.8rem',
                       background: isSelected ? '#dbeafe' : '#f8fafc',
                       borderRadius: 6,
@@ -646,6 +578,11 @@ function App() {
                         : {step.type}
                       </div>
                     )}
+                    {step.rule && (
+                      <div style={{ color: '#8b5cf6', fontSize: '0.65rem', marginTop: '0.1rem' }}>
+                        → {step.rule}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -657,20 +594,22 @@ function App() {
         )}
 
         {evalResult && (
-          <div style={styles.card}>
-            <div style={{ ...styles.cardTitle, color: '#10b981' }}>直接求值</div>
+          <div style={{ background: 'white', borderRadius: 8, padding: '0.8rem', marginBottom: '0.8rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '0.3rem', color: '#10b981' }}>直接求值</div>
             <div style={{ fontSize: '0.9rem' }}>结果: <strong style={{ fontFamily: 'monospace', fontSize: '1rem' }}>{evalResult.value}</strong></div>
             <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>类型: {evalResult.type}</div>
           </div>
         )}
 
         {typeResult && (
-          <div style={{ background: 'white', borderRadius: 8, padding: '0.8rem', marginBottom: '0.8rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '0.3rem', color: '#8b5cf6' }}>类型推导</div>
-            <span style={{ fontFamily: 'ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Fira Code", monospace', color: '#1f2937', fontSize: '0.9rem', letterSpacing: '0.02em' }}>{typeResult.type.replace(/->/g, ' → ')}</span>
+          <div style={{ background: '#f3e8ff', borderRadius: 8, padding: '0.8rem', marginBottom: '0.8rem', borderLeft: '4px solid #8b5cf6' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '0.3rem', color: '#7e22ce' }}>类型推导</div>
+            <div style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: '#1f2937', fontWeight: 500 }}>{typeResult.type.replace(/->/g, ' → ')}</div>
           </div>
         )}
       </main>
+
+      {showGrammar && <GrammarModal onClose={() => setShowGrammar(false)} />}
 
       <style>{`
         @keyframes fadeIn {
