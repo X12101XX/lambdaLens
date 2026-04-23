@@ -405,7 +405,7 @@ function GrammarModal({ onClose }: { onClose: () => void }) {
         }}
       >
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e2e8f0' }}>
-          <h2 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1e293b' }}>实例</h2>
+          <h2 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1e293b' }}>自定义规则</h2>
           <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.2rem' }}>点击使用表达式</p >
         </div>
 
@@ -442,7 +442,7 @@ function GrammarModal({ onClose }: { onClose: () => void }) {
                       onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#e2e8f0'; }}
                       onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#f1f5f9'; }}
                     >
-                      <code style={{ fontSize: '0.75rem', color: '#334155', flex: 1 }}>{rule.display}</code>
+                      <code style={{ fontSize: '0.75rem', flex: 1 }}>{rule.display}</code>
                       <div style={{ display: 'flex' }}>
                         <button
                           style={{ width: 22, height: 22, border: 'none', borderRadius: 4, background: '#64748b', color: 'white', fontSize: '0.65rem', cursor: 'pointer', marginRight: 4 }}
