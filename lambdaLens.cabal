@@ -26,8 +26,6 @@ library
         LambdaLens.Parser
         LambdaLens.TypeInfer
         LambdaLens.Eval
-        LambdaLens.Visualize
-        LambdaLens.Error
         LambdaLens.Stepper
         LambdaLens.Api
     build-depends:

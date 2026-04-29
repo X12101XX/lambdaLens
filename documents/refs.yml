@@ -1,0 +1,39 @@
+barendregt1984lambda:
+  type: book
+  title: "The Lambda Calculus: Its Syntax and Semantics"
+  author: Hendrik Pieter Barendregt
+  publisher: North-Holland
+  year: 1984
+
+hindley1969principal:
+  type: article
+  title: "The Principal Type-Scheme of an Object in Combinatory Logic"
+  author: J. Roger Hindley
+  journal: "Transactions of the American Mathematical Society"
+  volume: 146
+  pages: "29--60"
+  year: 1969
+
+milner1978theory:
+  type: article
+  title: "A Theory of Type Polymorphism in Programming"
+  author: Robin Milner
+  journal: "Journal of Computer and System Sciences"
+  volume: 17
+  number: 3
+  pages: "348--375"
+  year: 1978
+
+pierce2002types:
+  type: book
+  title: "Types and Programming Languages"
+  author: Benjamin C. Pierce
+  publisher: MIT Press
+  year: 2002
+
+jones2003haskell98:
+  type: book
+  title: "Haskell 98 Language and Libraries: The Revised Report"
+  author: Simon Peyton Jones
+  publisher: Cambridge University Press
+  year: 2003
